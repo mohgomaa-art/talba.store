@@ -28,16 +28,33 @@ app.use(async (req, res, next) => {
     }
 });
 
-// ─── Cloudinary / Multer Setup ─────────────────────────────────────────────────
-const diskStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = 'public/uploads/';
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage: diskStorage });
+// ─── Multer / Cloudinary Setup ────────────────────────────────────────────────
+let upload;
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
+    const { v2: cloudinary } = await import('cloudinary');
+    const { CloudinaryStorage } = await import('multer-storage-cloudinary');
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+    const cStorage = new CloudinaryStorage({
+        cloudinary,
+        params: { folder: 'talba-store', allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'] },
+    });
+    upload = multer({ storage: cStorage });
+    console.log('[Upload] Cloudinary active ☁️');
+} else {
+    const dStorage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            if (!fs.existsSync('public/uploads')) fs.mkdirSync('public/uploads', { recursive: true });
+            cb(null, 'public/uploads/');
+        },
+        filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+    });
+    upload = multer({ storage: dStorage });
+    console.log('[Upload] Local disk active 💾');
+}
 
 // ─── Session ──────────────────────────────────────────────────────────────────
 app.use(session({
