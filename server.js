@@ -5,180 +5,180 @@ import 'dotenv/config';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import session from 'express-session';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
-import fs from 'fs';
 
 import pageRoutes from './routes/pageRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import { syncProducts } from './controllers/taagerController.js';
-import * as productCtrl from './controllers/productController.js';
 import { isAdminApi } from './middleware/auth.js';
-
-import { startCronJobs } from './services/cronService.js';
+import connectDB, { Product, Order } from './config/db.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Cron
-startCronJobs();
+// ─── Connect to MongoDB ────────────────────────────────────────────────────────
+await connectDB();
 
-// Session
+// ─── Cloudinary Setup ─────────────────────────────────────────────────────────
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const cloudinaryStorage = new CloudinaryStorage({
+    cloudinary,
+    params: { folder: 'talba-store', allowed_formats: ['jpg', 'jpeg', 'png', 'webp'] },
+});
+const upload = multer({ storage: cloudinaryStorage });
+
+// ─── Session ──────────────────────────────────────────────────────────────────
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'ekiei-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+    secret: process.env.SESSION_SECRET || 'talba-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// Middleware
+// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+app.use(helmet({ contentSecurityPolicy: false }));
 
-// Security (Allowing some Unsplash/Google fonts images)
-app.use(helmet({
-  contentSecurityPolicy: false,
-}));
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-});
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
 app.use('/api/', limiter);
 
-// Multer Setup
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const dir = 'public/uploads/';
-        if (!fs.existsSync(dir)){
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir)
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-        cb(null, uniqueSuffix + path.extname(file.originalname))
-    }
-});
-const upload = multer({ storage: storage });
-
-// EJS Setup
+// ─── EJS Setup ────────────────────────────────────────────────────────────────
 app.use(expressLayouts);
 app.set('view engine', 'ejs');
 app.set('layout', './layouts/main');
 
-// Routes
+// ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/', pageRoutes);
 app.use('/api/orders', orderRoutes);
 
-// Public API Endpoints
+// ─── Public API ───────────────────────────────────────────────────────────────
 app.get('/api/products/:id', async (req, res) => {
-    const { Product } = await import('./config/db.js');
-    const products = await Product.read();
-    const product = products.find(p => p.id === req.params.id);
-    if (!product) return res.status(404).json({ error: 'Not found' });
-    res.json(product);
-});
-
-// Protected Admin API Endpoints
-app.get('/api/admin/stats', isAdminApi, async (req, res) => {
-    const { Order } = await import('./config/db.js');
-    const orders = await Order.read();
-    const totalSales = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-    res.json({
-        totalOrders: orders.length,
-        totalSales,
-        recentOrders: orders.slice(-10).reverse()
-    });
-});
-
-app.get('/api/admin/products', isAdminApi, async (req, res) => {
-    const { Product } = await import('./config/db.js');
-    const products = await Product.read();
-    res.json(products);
-});
-
-app.post('/api/admin/products', isAdminApi, async (req, res) => {
-    const { Product } = await import('./config/db.js');
-    const { name, category, price, oldPrice, description, seoTitle, seoDescription, images, taagerId } = req.body;
-    const products = await Product.read();
-    const newProduct = {
-        id: 'T' + Date.now().toString().slice(-4),
-        name,
-        slug: name.toLowerCase().replace(/ /g, '-').replace(/[^\u0621-\u064A0-9a-z-]/g, ''),
-        category,
-        price,
-        oldPrice,
-        description: description || '',
-        seoTitle: seoTitle || '',
-        seoDescription: seoDescription || '',
-        inStock: true,
-        featured: false,
-        images: images || ["https://images.unsplash.com/photo-1585338107529-13afc5f0141f?auto=format&fit=crop&q=80&w=800"],
-        specs: [],
-        taagerId: taagerId || null
-    };
-    products.push(newProduct);
-    await Product.write(products);
-    res.status(201).json(newProduct);
-});
-
-app.put('/api/admin/products/:id', isAdminApi, async (req, res) => {
-    const { Product } = await import('./config/db.js');
-    const { name, category, price, oldPrice, description, seoTitle, seoDescription, images, taagerId } = req.body;
-    const products = await Product.read();
-    const idx = products.findIndex(p => p.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: 'Not found' });
-    
-    products[idx] = { 
-        ...products[idx], 
-        name, category, price, oldPrice, 
-        description: description !== undefined ? description : products[idx].description,
-        seoTitle: seoTitle !== undefined ? seoTitle : products[idx].seoTitle,
-        seoDescription: seoDescription !== undefined ? seoDescription : products[idx].seoDescription,
-        images: images !== undefined && images.length ? images : products[idx].images,
-        taagerId: taagerId !== undefined ? taagerId : products[idx].taagerId
-    };
-    await Product.write(products);
-    res.json(products[idx]);
-});
-
-app.delete('/api/admin/products/:id', isAdminApi, async (req, res) => {
-    const { Product } = await import('./config/db.js');
-    const products = await Product.read();
-    const filtered = products.filter(p => p.id !== req.params.id);
-    await Product.write(filtered);
-    res.json({ success: true });
-});
-
-app.post('/api/sync', isAdminApi, syncProducts);
-
-app.post('/api/admin/auto-scrape', isAdminApi, async (req, res) => {
     try {
-        const { spawn } = await import('child_process');
-        const child = spawn('node', ['taagerScraper.js', '--auto'], {
-            detached: true,
-            stdio: 'ignore'
-        });
-        child.unref();
-        res.json({ success: true, message: 'تم تشغيل روبوت السحب في الخلفية بنجاح! سيتم فحص المنتجات وإضافتها تلقائياً (قد يستغرق ذلك بضع دقائق).' });
+        const product = await Product.findOne({ id: req.params.id }).lean();
+        if (!product) return res.status(404).json({ error: 'Not found' });
+        res.json(product);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
+// ─── Admin Stats ──────────────────────────────────────────────────────────────
+app.get('/api/admin/stats', isAdminApi, async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ createdAt: -1 }).limit(50).lean();
+        const totalOrders = await Order.countDocuments();
+        const allOrders = await Order.find().lean();
+        const totalSales = allOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+        res.json({ totalOrders, totalSales, recentOrders: orders });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─── Admin Products ───────────────────────────────────────────────────────────
+app.get('/api/admin/products', isAdminApi, async (req, res) => {
+    try {
+        const products = await Product.find().sort({ createdAt: -1 }).lean();
+        res.json(products);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/admin/products', isAdminApi, async (req, res) => {
+    try {
+        const { name, category, price, oldPrice, description, seoTitle, seoDescription, images, taagerId } = req.body;
+        const id = 'T' + Date.now().toString().slice(-6);
+        const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\u0621-\u064A0-9a-z-]/g, '');
+        const product = await Product.create({
+            id, name, slug, category,
+            price: parseFloat(price),
+            oldPrice: oldPrice ? parseFloat(oldPrice) : null,
+            description: description || '',
+            seoTitle: seoTitle || '',
+            seoDescription: seoDescription || '',
+            inStock: true,
+            featured: false,
+            images: images?.length ? images : ['https://images.unsplash.com/photo-1585338107529-13afc5f0141f?auto=format&fit=crop&q=80&w=800'],
+            specs: [],
+            taagerId: taagerId ? parseInt(taagerId) : null
+        });
+        res.status(201).json(product);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/admin/products/:id', isAdminApi, async (req, res) => {
+    try {
+        const { name, category, price, oldPrice, description, seoTitle, seoDescription, images, taagerId } = req.body;
+        const product = await Product.findOneAndUpdate(
+            { id: req.params.id },
+            {
+                $set: {
+                    ...(name && { name }),
+                    ...(category && { category }),
+                    ...(price && { price: parseFloat(price) }),
+                    ...(oldPrice !== undefined && { oldPrice: oldPrice ? parseFloat(oldPrice) : null }),
+                    ...(description !== undefined && { description }),
+                    ...(seoTitle !== undefined && { seoTitle }),
+                    ...(seoDescription !== undefined && { seoDescription }),
+                    ...(images?.length && { images }),
+                    ...(taagerId !== undefined && { taagerId: taagerId ? parseInt(taagerId) : null }),
+                }
+            },
+            { new: true }
+        );
+        if (!product) return res.status(404).json({ error: 'Not found' });
+        res.json(product);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/admin/products/:id', isAdminApi, async (req, res) => {
+    try {
+        await Product.deleteOne({ id: req.params.id });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─── Sync & Scrape ────────────────────────────────────────────────────────────
+app.post('/api/sync', isAdminApi, syncProducts);
+
+app.post('/api/admin/auto-scrape', isAdminApi, async (req, res) => {
+    try {
+        const { spawn } = await import('child_process');
+        const child = spawn('node', ['taagerScraper.js', '--auto'], { detached: true, stdio: 'ignore' });
+        child.unref();
+        res.json({ success: true, message: 'تم تشغيل روبوت السحب في الخلفية بنجاح! سيتم إضافة المنتجات تلقائياً خلال بضع دقائق.' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─── Image Upload (Cloudinary) ────────────────────────────────────────────────
 app.post('/api/admin/upload-images', isAdminApi, upload.array('images', 10), (req, res) => {
     try {
-        const urls = req.files.map(f => `/uploads/${f.filename}`);
+        const urls = req.files.map(f => f.path); // Cloudinary returns full URL in f.path
         res.json({ success: true, urls });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
-
-
-// Start Server
+// ─── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Talba Store Server running on http://localhost:${PORT}`);
 });

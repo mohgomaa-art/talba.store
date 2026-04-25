@@ -1,4 +1,4 @@
-import { Product, Category } from '../config/db.js';
+import connectDB, { Product } from '../config/db.js';
 import * as taager from '../services/taagerService.js';
 
 /**
@@ -6,30 +6,19 @@ import * as taager from '../services/taagerService.js';
  */
 export const syncProducts = async (req, res) => {
   try {
+    await connectDB();
     console.log('[Sync] Starting Taager product sync...');
     const taagerProducts = await taager.fetchAllProducts();
-    
+
     let count = 0;
     for (const tp of taagerProducts) {
       const mapped = taager.mapTaagerProduct(tp);
-      
-      // Update or Create
-      await Product.updateOne(
+      await Product.findOneAndUpdate(
         { taagerId: mapped.taagerId },
-        mapped,
-        { upsert: true }
+        { $set: mapped },
+        { upsert: true, new: true }
       );
       count++;
-    }
-
-    // Also sync categories
-    const taagerCats = await taager.getCategories();
-    for (const tc of taagerCats) {
-      await Category.updateOne(
-        { name: tc.name },
-        { name: tc.name, nameEn: tc.nameEn, isActive: true },
-        { upsert: true }
-      );
     }
 
     res.json({ success: true, count });

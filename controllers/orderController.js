@@ -10,6 +10,7 @@ export const createOrder = async (req, res) => {
 
     // 1. Save order locally first
     const newOrder = await Order.create({
+      id: Date.now().toString(),
       customer,
       products,
       totalPrice,
@@ -19,15 +20,14 @@ export const createOrder = async (req, res) => {
     });
 
     // 2. Try to forward to Taager for each product that has a taagerId
-    // In a real scenario, we might group these or send one by one
     for (const item of products) {
-      const product = await Product.findById(item.id);
+      const product = await Product.findOne({ id: item.id }).lean();
       if (product && product.taagerId) {
         try {
           const taagerRes = await createTaagerOrder({
             specs: [{ prodID: product.taagerId, quantity: item.quantity }],
             orderPrice: item.price,
-            orderProfit: product.profit * item.quantity,
+            orderProfit: (product.profit || 0) * item.quantity,
             buyerName: customer.name,
             buyerPhoneNumber: customer.phone,
             buyerPhoneNumber2: customer.phone2 || '',
@@ -37,21 +37,20 @@ export const createOrder = async (req, res) => {
             countryIsoCode3: 'EGY'
           });
 
-          // Update local order with Taager ID
-          await Order.findByIdAndUpdate(newOrder.id, {
+          await Order.findByIdAndUpdate(newOrder._id, {
             taagerOrderId: taagerRes.data?.orderID || taagerRes.orderID,
             status: 'confirmed'
           });
-          
-          console.log(`[Order] Forwarded to Taager: ${newOrder.id}`);
+
+          console.log(`[Order] Forwarded to Taager: ${newOrder._id}`);
         } catch (taagerError) {
-          console.error(`[Order] Taager Forwarding Failed for ${newOrder.id}:`, taagerError.message);
-          await Order.findByIdAndUpdate(newOrder.id, { status: 'taager_failed' });
+          console.error(`[Order] Taager Forwarding Failed:`, taagerError.message);
+          await Order.findByIdAndUpdate(newOrder._id, { status: 'taager_failed' });
         }
       }
     }
 
-    res.json({ success: true, orderId: newOrder.id });
+    res.json({ success: true, orderId: newOrder._id });
   } catch (e) {
     console.error('[Order] Creation Failed:', e.message);
     res.status(500).json({ success: false, error: e.message });
@@ -62,7 +61,7 @@ export const createOrder = async (req, res) => {
  * Get order status
  */
 export const getOrderStatus = async (req, res) => {
-  const order = await Order.findById(req.params.id);
+  const order = await Order.findById(req.params.id).lean();
   if (!order) return res.status(404).json({ error: 'Order not found' });
   res.json(order);
 };

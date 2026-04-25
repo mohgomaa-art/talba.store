@@ -1,28 +1,32 @@
-import { Product, Category } from '../config/db.js';
+import connectDB, { Product } from '../config/db.js';
 
 /**
  * List products with filters
  */
 export const getProducts = async (req, res) => {
+  await connectDB();
   const { category, search, minPrice, maxPrice, sort } = req.query;
-  
-  let products = await Product.read();
 
-  if (category) products = products.filter(p => p.category === category);
-  if (search) {
-    const q = search.toLowerCase();
-    products = products.filter(p => 
-      p.name.toLowerCase().includes(q) || 
-      p.description.toLowerCase().includes(q)
-    );
+  const query = {};
+  if (category) query.category = category;
+  if (minPrice || maxPrice) {
+    query.price = {};
+    if (minPrice) query.price.$gte = Number(minPrice);
+    if (maxPrice) query.price.$lte = Number(maxPrice);
   }
-  if (minPrice) products = products.filter(p => p.price >= Number(minPrice));
-  if (maxPrice) products = products.filter(p => p.price <= Number(maxPrice));
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
+  }
 
-  if (sort === 'price_asc') products.sort((a,b) => a.price - b.price);
-  if (sort === 'price_desc') products.sort((a,b) => b.price - a.price);
-  if (sort === 'newest') products.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  let sortObj = {};
+  if (sort === 'price_asc') sortObj = { price: 1 };
+  else if (sort === 'price_desc') sortObj = { price: -1 };
+  else if (sort === 'newest') sortObj = { createdAt: -1 };
 
+  const products = await Product.find(query).sort(sortObj).lean();
   res.json(products);
 };
 
@@ -30,39 +34,43 @@ export const getProducts = async (req, res) => {
  * Get products data for SSR
  */
 export const getProductsData = async (query = {}) => {
+  await connectDB();
   const { category, search, minPrice, maxPrice, sort } = query;
-  
-  let products = await Product.read();
 
-  if (category) products = products.filter(p => p.category === category);
-  if (search) {
-    const q = search.toLowerCase();
-    products = products.filter(p => 
-      p.name.toLowerCase().includes(q) || 
-      (p.description && p.description.toLowerCase().includes(q))
-    );
+  const filter = {};
+  if (category) filter.category = category;
+  if (minPrice || maxPrice) {
+    filter.price = {};
+    if (minPrice) filter.price.$gte = Number(minPrice);
+    if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
-  if (minPrice) products = products.filter(p => p.price >= Number(minPrice));
-  if (maxPrice) products = products.filter(p => p.price <= Number(maxPrice));
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
+  }
 
-  if (sort === 'price_asc') products.sort((a,b) => a.price - b.price);
-  if (sort === 'price_desc') products.sort((a,b) => b.price - a.price);
-  if (sort === 'newest') products.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  let sortObj = {};
+  if (sort === 'price_asc') sortObj = { price: 1 };
+  else if (sort === 'price_desc') sortObj = { price: -1 };
+  else if (sort === 'newest') sortObj = { createdAt: -1 };
 
-  return products;
+  return await Product.find(filter).sort(sortObj).lean();
 };
 
 /**
  * Get single product by slug
  */
 export const getProductBySlug = async (slug) => {
-  return await Product.findOne({ slug });
+  await connectDB();
+  return await Product.findOne({ slug }).lean();
 };
 
 /**
  * Get featured products
  */
 export const getFeaturedProducts = async () => {
-  const products = await Product.read();
-  return products.filter(p => p.featured).slice(0, 8);
+  await connectDB();
+  return await Product.find({ featured: true }).limit(8).lean();
 };

@@ -1,97 +1,63 @@
-import fs from 'fs/promises';
-import path from 'path';
+import mongoose from 'mongoose';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-
-/**
- * A simple JSON-based database wrapper that mimics Mongoose patterns
- */
-class DB {
-  constructor(collection) {
-    this.filePath = path.join(DATA_DIR, `${collection}.json`);
+// ─── MongoDB Connection ────────────────────────────────────────────────────────
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('[DB] MongoDB connected successfully');
+  } catch (e) {
+    console.error('[DB] MongoDB connection failed:', e.message);
+    process.exit(1);
   }
+};
 
-  async read() {
-    try {
-      const data = await fs.readFile(this.filePath, 'utf-8');
-      return JSON.parse(data);
-    } catch (e) {
-      return [];
-    }
-  }
+// ─── Product Schema ───────────────────────────────────────────────────────────
+const productSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  name: { type: String, required: true },
+  slug: { type: String, unique: true },
+  description: String,
+  price: Number,
+  oldPrice: Number,
+  category: String,
+  inStock: { type: Boolean, default: true },
+  featured: { type: Boolean, default: false },
+  images: [String],
+  specs: [{ key: String, value: String }],
+  seoTitle: String,
+  seoDescription: String,
+  taagerId: Number,
+  taagerData: mongoose.Schema.Types.Mixed,
+}, { timestamps: true });
 
-  async write(data) {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(this.filePath, JSON.stringify(data, null, 2));
-  }
+// ─── Order Schema ─────────────────────────────────────────────────────────────
+const orderSchema = new mongoose.Schema({
+  id: String,
+  customer: {
+    name: String,
+    phone: String,
+    phone2: String,
+    governorate: String,
+    city: String,
+    address: String,
+  },
+  products: [mongoose.Schema.Types.Mixed],
+  totalPrice: Number,
+  paymentMethod: String,
+  notes: String,
+  status: { type: String, default: 'pending' },
+  taagerOrderId: String,
+}, { timestamps: true });
 
-  async find(query = {}) {
-    const data = await this.read();
-    return data.filter(item => {
-      for (let key in query) {
-        if (item[key] !== query[key]) return false;
-      }
-      return true;
-    });
-  }
+// ─── Settings Schema ──────────────────────────────────────────────────────────
+const settingsSchema = new mongoose.Schema({
+  key: { type: String, unique: true },
+  value: mongoose.Schema.Types.Mixed,
+}, { timestamps: true });
 
-  async findOne(query) {
-    const results = await this.find(query);
-    return results[0] || null;
-  }
-
-  async findById(id) {
-    return this.findOne({ id });
-  }
-
-  async create(item) {
-    const data = await this.read();
-    const newItem = {
-      ...item,
-      id: item.id || Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    data.push(newItem);
-    await this.write(data);
-    return newItem;
-  }
-
-  async findByIdAndUpdate(id, updates) {
-    let data = await this.read();
-    let updatedItem = null;
-    data = data.map(item => {
-      if (item.id === id || item.taagerId === id) {
-        updatedItem = { ...item, ...updates, updatedAt: new Date().toISOString() };
-        return updatedItem;
-      }
-      return item;
-    });
-    await this.write(data);
-    return updatedItem;
-  }
-
-  async updateOne(query, updates, options = {}) {
-    let data = await this.read();
-    let index = data.findIndex(item => {
-      for (let key in query) {
-        if (item[key] !== query[key]) return false;
-      }
-      return true;
-    });
-
-    if (index !== -1) {
-      data[index] = { ...data[index], ...updates, updatedAt: new Date().toISOString() };
-      await this.write(data);
-      return data[index];
-    } else if (options.upsert) {
-      return this.create({ ...query, ...updates });
-    }
-    return null;
-  }
-}
-
-export const Product = new DB('products');
-export const Order = new DB('orders');
-export const Category = new DB('categories');
-export const Settings = new DB('settings');
+// ─── Export Models ────────────────────────────────────────────────────────────
+export const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
+export const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
+export const Settings = mongoose.models.Settings || mongoose.model('Settings', settingsSchema);
+export default connectDB;
