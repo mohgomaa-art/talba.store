@@ -3,10 +3,10 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import expressLayouts from 'express-ejs-layouts';
-import 'dotenv/config';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
@@ -64,7 +64,12 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'talba-secret-2026',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }
+    store: MongoStore.create({ 
+        mongoUrl: process.env.MONGODB_URI,
+        collectionName: 'sessions',
+        ttl: 24 * 60 * 60 // 1 day
+    }),
+    cookie: { maxAge: 24 * 60 * 60 * 1000, secure: process.env.VERCEL === '1', httpOnly: true }
 }));
 
 // ─── Core Middleware ──────────────────────────────────────────────────────────
@@ -92,6 +97,35 @@ app.get('/api/products/:id', async (req, res) => {
         res.json(product);
     } catch (e) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+// ─── Sitemap ──────────────────────────────────────────────────────────────────
+app.get('/sitemap.xml', async (req, res) => {
+    try {
+        const products = await Product.find({ inStock: true }, 'slug updatedAt').lean();
+        const baseUrl = 'https://www.talba.store';
+        
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+        
+        // Static routes
+        const staticRoutes = ['', '/shop', '/about', '/contact', '/shipping', '/returns'];
+        staticRoutes.forEach(route => {
+            xml += `  <url>\n    <loc>${baseUrl}${route}</loc>\n    <changefreq>daily</changefreq>\n    <priority>${route === '' ? '1.0' : '0.8'}</priority>\n  </url>\n`;
+        });
+
+        // Product routes
+        products.forEach(p => {
+            xml += `  <url>\n    <loc>${baseUrl}/product/${p.slug}</loc>\n    <lastmod>${new Date(p.updatedAt || Date.now()).toISOString().split('T')[0]}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+        });
+
+        xml += `</urlset>`;
+        
+        res.header('Content-Type', 'application/xml');
+        res.send(xml);
+    } catch (e) {
+        res.status(500).end();
     }
 });
 
