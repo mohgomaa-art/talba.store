@@ -145,6 +145,17 @@ app.get('/api/admin/stats', isAdminApi, async (req, res) => {
     }
 });
 
+// Update Order
+app.put('/api/admin/orders/:id', isAdminApi, async (req, res) => {
+    try {
+        const { status, taagerOrderId } = req.body;
+        const updated = await Order.findByIdAndUpdate(req.params.id, { status, taagerOrderId }, { new: true });
+        res.json({ success: true, order: updated });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // ─── Admin: Products CRUD ─────────────────────────────────────────────────────
 app.get('/api/admin/products', isAdminApi, async (req, res) => {
     try {

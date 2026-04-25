@@ -26,7 +26,10 @@
         </div>
 
         <section class="orders-section">
-            <h2>آخر الطلبات</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>آخر الطلبات</h2>
+                <input type="text" id="order-search" onkeyup="filterOrders()" placeholder="البحث في الطلبات..." style="padding: 10px; border-radius: 8px; border: 1px solid var(--gray-200); width: 300px;">
+            </div>
             <div class="table-responsive">
                 <table class="admin-table">
                     <thead>
@@ -50,8 +53,9 @@
 
     <div id="products-tab" class="tab-content">
         <section class="products-section">
-            <header class="section-header">
+            <header class="section-header" style="flex-wrap: wrap;">
                 <h2>إدارة المنتجات</h2>
+                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="البحث في المنتجات..." style="padding: 10px; border-radius: 8px; border: 1px solid var(--gray-200); width: 300px; margin: 0 15px;">
                 <button onclick="openProductModal()" class="btn btn-outline">إضافة منتج جديد</button>
             </header>
             <div class="table-responsive">
@@ -142,7 +146,8 @@
             <!-- Rendered via JS -->
         </div>
         <div class="modal-actions" style="margin-top: 20px;">
-            <button type="button" onclick="closeOrderModal()" class="btn btn-primary">إغلاق</button>
+            <button type="button" onclick="closeOrderModal()" class="btn btn-outline">إغلاق</button>
+            <button type="button" onclick="saveOrderUpdates()" class="btn btn-primary">حفظ التعديلات</button>
         </div>
     </div>
 </div>
@@ -196,6 +201,7 @@
         }
 
         document.getElementById('order-details-content').innerHTML = `
+            <input type="hidden" id="edit-order-id" value="${o._id || o.id}">
             <div style="background: var(--gray-50); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <strong>بيانات العميل:</strong><br>
                 الاسم: ${c.name || '-'}<br>
@@ -213,9 +219,21 @@
                 <hr style="margin: 10px 0;">
                 الإجمالي: <strong>${o.totalPrice} ج.م</strong>
             </div>
-            <div>
-                <strong>حالة الطلب:</strong> <span class="status-badge ${o.status}">${o.status}</span><br>
-                <strong>Taager ID:</strong> <code>${o.taagerOrderId || 'غير متوفر'}</code>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <strong>حالة الطلب:</strong><br>
+                    <select id="edit-order-status" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border: 1px solid var(--gray-200);">
+                        <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>قيد الانتظار</option>
+                        <option value="confirmed" ${o.status === 'confirmed' ? 'selected' : ''}>مؤكد (على تاجر)</option>
+                        <option value="taager_failed" ${o.status === 'taager_failed' ? 'selected' : ''}>فشل الإرسال لتاجر</option>
+                        <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>تم التوصيل</option>
+                        <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>ملغي</option>
+                    </select>
+                </div>
+                <div>
+                    <strong>Taager ID:</strong><br>
+                    <input type="text" id="edit-order-taager-id" value="${o.taagerOrderId || ''}" placeholder="أدخل رقم الطلب على تاجر" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border: 1px solid var(--gray-200);">
+                </div>
             </div>
         `;
         document.getElementById('orderModal').style.display = 'flex';
@@ -223,6 +241,45 @@
 
     function closeOrderModal() {
         document.getElementById('orderModal').style.display = 'none';
+    }
+
+    async function saveOrderUpdates() {
+        const id = document.getElementById('edit-order-id').value;
+        const status = document.getElementById('edit-order-status').value;
+        const taagerOrderId = document.getElementById('edit-order-taager-id').value;
+
+        try {
+            const res = await fetch(`/api/admin/orders/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, taagerOrderId })
+            });
+            if (res.ok) {
+                alert('تم تحديث الطلب بنجاح');
+                closeOrderModal();
+                loadStats(); // Reload orders table
+            } else {
+                alert('فشل التحديث');
+            }
+        } catch (e) {
+            alert('خطأ: ' + e.message);
+        }
+    }
+
+    function filterOrders() {
+        const q = document.getElementById('order-search').value.toLowerCase();
+        const rows = document.querySelectorAll('#orders-body tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+
+    function filterProducts() {
+        const q = document.getElementById('product-search').value.toLowerCase();
+        const rows = document.querySelectorAll('#products-body tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+        });
     }
 
     async function startAutoScrape() {
