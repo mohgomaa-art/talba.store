@@ -1,7 +1,26 @@
 <div class="shop-page container">
     <header class="shop-header">
-        <h1>المتجر</h1>
-        <nav class="breadcrumb">الرئيسية > المتجر</nav>
+        <h1><%= query.category || 'المتجر' %></h1>
+        <nav class="breadcrumb">الرئيسية > <%= query.category || 'المتجر' %></nav>
+        
+        <div class="category-seo-desc">
+            <% 
+            const seoDesc = {
+                'المطبخ': 'اكتشف أحدث أدوات المطبخ العصرية وأجهزة الطبخ بأسعار ممتازة في مصر. تسوق الآن مع ضمان الجودة، الدفع عند الاستلام، وشحن سريع لكل المحافظات.',
+                'المكياج والعناية': 'أفضل منتجات المكياج والعناية بالبشرة. منتجات تجميل أصلية تناسبك بأقل سعر في السوق المصري، اشتري الآن وتألقي.',
+                'الاكسسوارات': 'تشكيلة اكسسوارات مميزة لتكمل شياكتك. أرخص سعر في مصر، خامات عالية الجودة، وتوصيل لباب البيت.',
+                'الديكور': 'جدد بيتك بأرقى قطع الديكور الحديثة. تحف، تابلوهات، وديكورات منزلية فخمة للبيع في القاهرة والاسكندرية وكل مصر.',
+                'الإلكترونيات': 'اكسسوارات إلكترونية، سماعات، وأدوات ذكية حديثة بأفضل سعر في السوق المصري. مراجعات حقيقية وتجربة شراء مضمونة.'
+            };
+            const currentDesc = seoDesc[query.category] || 'تسوق تشكيلة واسعة من أفضل المنتجات في مصر بأسعار تنافسية. نوفر لك شحن سريع لجميع المحافظات والدفع عند الاستلام لضمان راحتك.';
+            %>
+            <p><%= currentDesc %></p>
+            <div class="trust-badges-inline">
+                <span>🚚 توصيل سريع لمصر</span>
+                <span>💵 الدفع عند الاستلام</span>
+                <span>✅ استرجاع مضمون</span>
+            </div>
+        </div>
     </header>
 
     <div class="shop-layout">
@@ -69,5 +88,33 @@
     .shop-layout { grid-template-columns: 1fr; }
     .sidebar { order: 2; }
     .products-container { order: 1; }
+}
+
+.category-seo-desc {
+    margin-top: 15px;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: var(--radius);
+    border-right: 4px solid var(--primary);
+    text-align: right;
+}
+.category-seo-desc p {
+    margin: 0 0 15px 0;
+    color: var(--gray-700);
+    line-height: 1.6;
+    font-size: 15px;
+}
+.trust-badges-inline {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+}
+.trust-badges-inline span {
+    background: rgba(39, 174, 96, 0.1);
+    padding: 5px 12px;
+    border-radius: 20px;
 }
 </style>
