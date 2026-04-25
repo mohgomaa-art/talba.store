@@ -1,4 +1,8 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+// Fix ISP DNS issues - use Google DNS for MongoDB SRV resolution
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 // ─── MongoDB Connection ────────────────────────────────────────────────────────
 const connectDB = async () => {
