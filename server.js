@@ -18,8 +18,16 @@ import connectDB, { Product, Order } from './config/db.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Connect to MongoDB ────────────────────────────────────────────────────────
-await connectDB();
+// ─── Connect to MongoDB (runs before every request, cached after first time) ──
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (e) {
+        console.error('[DB] Connection error:', e.message);
+        res.status(500).json({ error: 'Database connection failed' });
+    }
+});
 
 // ─── Cloudinary Setup ─────────────────────────────────────────────────────────
 cloudinary.config({
