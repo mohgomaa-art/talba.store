@@ -53,7 +53,11 @@ router.post('/login', (req, res) => {
 
     if (username === adminUser && password === adminPass) {
         req.session.isAdmin = true;
-        return res.redirect('/admin');
+        // On Vercel (Serverless), we MUST wait for the session to save to MongoDB before redirecting
+        return req.session.save((err) => {
+            if (err) console.error('[Session] Save error:', err);
+            res.redirect('/admin');
+        });
     }
     res.render('pages/login', { title: 'تسجيل الدخول', error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
 });
