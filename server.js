@@ -183,7 +183,11 @@ app.post('/api/admin/upload-images', isAdminApi, upload.array('images', 10), (re
     }
 });
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Talba Store Server running on http://localhost:${PORT}`);
-});
+// ─── Start Server (local dev) / Export (Vercel) ───────────────────────────────
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`✅ Talba Store Server running on http://localhost:${PORT}`);
+    });
+}
+
+export default app;
