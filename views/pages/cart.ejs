@@ -1,0 +1,134 @@
+<div class="cart-page container">
+    <h1>سلة التسوق</h1>
+    
+    <div id="cart-container">
+        <!-- Rendered via JS -->
+        <div class="loading">جاري تحميل السلة...</div>
+    </div>
+</div>
+
+<script>
+    function renderCart() {
+        const cart = getCart();
+        const container = document.getElementById('cart-container');
+        
+        if (cart.length === 0) {
+            container.innerHTML = `
+                <div class="empty-cart">
+                    <p>سلتك فاضية دلوقتي.</p>
+                    <a href="/shop" class="btn btn-primary">ابدأ التسوق</a>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <div class="table-responsive">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>السعر</th>
+                            <th>الكمية</th>
+                            <th>الإجمالي</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        let total = 0;
+        cart.forEach(item => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            html += `
+                <tr>
+                    <td class="product-cell">
+                        <img src="${item.image}" alt="${item.name}">
+                        <div>
+                            <h4>${item.name}</h4>
+                        </div>
+                    </td>
+                    <td data-label="السعر">${item.price} ج.م</td>
+                    <td data-label="الكمية">
+                        <div class="qty-control">
+                            <button onclick="updateQuantity('${item.id}', -1)">−</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateQuantity('${item.id}', 1)">+</button>
+                        </div>
+                    </td>
+                    <td data-label="الإجمالي">${subtotal} ج.م</td>
+                    <td><button onclick="removeFromCart('${item.id}')" class="delete-btn">✕</button></td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="cart-summary">
+                <div class="summary-box">
+                    <div class="summary-row">
+                        <span>إجمالي المنتجات:</span>
+                        <span>${total} ج.م</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>الشحن:</span>
+                        <span>مجاني</span>
+                    </div>
+                    <hr>
+                    <div class="summary-row total">
+                        <span>الإجمالي الكلي:</span>
+                        <span>${total} ج.م</span>
+                    </div>
+                    <a href="/checkout" class="btn btn-primary btn-block">متابعة للدفع ←</a>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', renderCart);
+    window.renderCart = renderCart;
+</script>
+
+<style>
+.cart-table { width: 100%; border-collapse: collapse; margin: 40px 0; }
+.cart-table th { text-align: right; padding: 15px; border-bottom: 2px solid var(--gray-100); }
+.cart-table td { padding: 20px 15px; border-bottom: 1px solid var(--gray-100); }
+
+.product-cell { display: flex; align-items: center; gap: 15px; }
+.product-cell img { width: 60px; height: 60px; object-fit: contain; }
+
+.qty-control { display: flex; align-items: center; gap: 10px; border: 1px solid var(--gray-200); width: fit-content; padding: 2px; border-radius: 4px; }
+.qty-control button { background: none; border: none; padding: 5px 10px; cursor: pointer; }
+
+.cart-summary { display: flex; justify-content: flex-end; }
+.summary-box { background: var(--gray-50); padding: 30px; border-radius: var(--radius); width: 100%; max-width: 400px; }
+.summary-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: 600; }
+.summary-row.total { font-size: 20px; color: var(--primary); font-weight: 900; }
+.btn-block { width: 100%; text-align: center; margin-top: 20px; padding: 15px; }
+
+.delete-btn { background: none; border: none; color: var(--gray-500); cursor: pointer; font-size: 18px; }
+
+/* Responsive Cart Table */
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+    .cart-table { display: block; width: 100%; }
+    .cart-table thead { display: none; }
+    .cart-table tbody { display: block; width: 100%; }
+    .cart-table tr { display: flex; flex-direction: column; position: relative; border-bottom: 2px solid var(--gray-100); padding: 20px 0; }
+    .cart-table td { padding: 8px 0; border: none; display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+    .cart-table td::before { content: attr(data-label); font-weight: bold; color: var(--gray-500); }
+    .product-cell { align-items: flex-start; justify-content: flex-start !important; flex-direction: row; gap: 15px; }
+    .product-cell img { width: 70px; height: 70px; border-radius: 8px; }
+    .product-cell::before { display: none; }
+    .delete-btn { position: absolute; top: 20px; left: 0; background: var(--gray-50); padding: 5px 10px; border-radius: 4px; }
+    .cart-summary { justify-content: center; width: 100%; margin-top: 20px; }
+    .summary-box { max-width: 100%; }
+}
+</style>

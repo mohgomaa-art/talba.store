@@ -1,0 +1,34 @@
+<div class="product-card">
+    <div class="card-image">
+        <% if (product.category) { %>
+            <span class="category-badge"><%= product.category %></span>
+        <% } %>
+        <% if (product.oldPrice && product.oldPrice > product.price) { %>
+            <span class="discount-badge">خصم <%= Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) %>%</span>
+        <% } %>
+        <a href="/product/<%= product.slug %>">
+            <img src="<%= product.images[0] %>" alt="<%= product.name %>" loading="lazy">
+        </a>
+    </div>
+    
+    <div class="card-info">
+        <div class="rating">
+            <span class="stars-marker">★</span>
+            <span class="count">4.2 (<%= product.reviews || 0 %> تقييم)</span>
+        </div>
+        <h3 class="product-name">
+            <a href="/product/<%= product.slug %>"><%= product.name %></a>
+        </h3>
+        <div class="price-wrapper">
+            <span class="current-price"><%= product.price %> ج.م</span>
+            <% if (product.oldPrice && product.oldPrice > product.price) { %>
+                <span class="old-price"><%= product.oldPrice %> ج.م</span>
+            <% } %>
+        </div>
+        
+        <div class="card-actions">
+            <button onclick="addToCart('<%= product.id %>')" class="btn btn-outline">السلة</button>
+            <a href="/checkout?buyNow=<%= product.id %>" class="btn btn-primary">شراء</a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,73 @@
+<div class="shop-page container">
+    <header class="shop-header">
+        <h1>المتجر</h1>
+        <nav class="breadcrumb">الرئيسية > المتجر</nav>
+    </header>
+
+    <div class="shop-layout">
+        <aside class="sidebar">
+            <div class="sidebar-widget">
+                <h4>البحث</h4>
+                <form action="/shop" method="GET">
+                    <input type="text" name="search" placeholder="ابحث عن منتج..." value="<%= query.search || '' %>">
+                </form>
+            </div>
+
+            <div class="sidebar-widget">
+                <h4>الأقسام</h4>
+                <ul class="filter-list">
+                    <li><a href="/shop" class="<%= !query.category ? 'active' : '' %>">كل المنتجات</a></li>
+                    <li><a href="/shop?category=المطبخ" class="<%= query.category === 'المطبخ' ? 'active' : '' %>">المطبخ</a></li>
+                    <li><a href="/shop?category=المكياج والعناية" class="<%= query.category === 'المكياج والعناية' ? 'active' : '' %>">المكياج والعناية</a></li>
+                    <li><a href="/shop?category=الاكسسوارات" class="<%= query.category === 'الاكسسوارات' ? 'active' : '' %>">الاكسسوارات</a></li>
+                    <li><a href="/shop?category=الديكور" class="<%= query.category === 'الديكور' ? 'active' : '' %>">الديكور</a></li>
+                    <li><a href="/shop?category=الإلكترونيات" class="<%= query.category === 'الإلكترونيات' ? 'active' : '' %>">الإلكترونيات</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <section class="products-container">
+            <div class="shop-toolbar">
+                <p>عرض <%= products.length %> منتج</p>
+                <div class="sort-wrapper">
+                    <label>ترتيب حسب:</label>
+                    <select onchange="location.href = '/shop?sort=' + this.value">
+                        <option value="newest">الأحدث</option>
+                        <option value="price_asc">السعر: من الأقل للأعلى</option>
+                        <option value="price_desc">السعر: من الأعلى للأقل</option>
+                    </select>
+                </div>
+            </div>
+
+            <% if (products && products.length > 0) { %>
+                <div class="product-grid">
+                    <% products.forEach(product => { %>
+                        <%- include('../partials/productCard', { product }) %>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <p>لا توجد منتجات تطابق بحثك حالياً.</p>
+                </div>
+            <% } %>
+        </section>
+    </div>
+</div>
+
+<style>
+.shop-layout { display: grid; grid-template-columns: 280px 1fr; gap: 40px; margin-top: 40px; }
+.sidebar-widget { margin-bottom: 40px; }
+.sidebar-widget h4 { font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid var(--gray-100); padding-bottom: 10px; }
+.filter-list { list-style: none; }
+.filter-list li { margin-bottom: 10px; }
+.filter-list a.active { color: var(--primary); font-weight: 700; }
+
+.shop-toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--gray-50); padding: 15px 20px; border-radius: var(--radius); margin-bottom: 30px; }
+.sort-wrapper select { width: auto; padding: 5px 15px; font-family: inherit; }
+
+@media (max-width: 768px) {
+    .shop-layout { grid-template-columns: 1fr; }
+    .sidebar { order: 2; }
+    .products-container { order: 1; }
+}
+</style>

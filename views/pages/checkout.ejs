@@ -1,0 +1,256 @@
+<div class="checkout-page container">
+    <div class="checkout-steps">
+        <div class="step active" id="step1-indicator" onclick="switchStep(1)">بيانات التوصيل</div>
+        <div class="step" id="step2-indicator" onclick="switchStep(2)">مراجعة الطلب</div>
+        <div class="step" id="step3-indicator">تأكيد</div>
+    </div>
+
+    <div id="checkout-content">
+        <!-- Step 1: Delivery Info -->
+        <div id="step1" class="step-container active">
+            <form id="delivery-form" onsubmit="toStep2(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>الاسم الكامل *</label>
+                        <input type="text" id="name" required placeholder="الاسم بالكامل">
+                    </div>
+                    <div class="form-group">
+                        <label>رقم التليفون *</label>
+                        <input type="tel" id="phone" required placeholder="01xxxxxxxxx">
+                    </div>
+                    <div class="form-group">
+                        <label>رقم بديل (اختياري)</label>
+                        <input type="tel" id="phone2" placeholder="رقم آخر">
+                    </div>
+                    <div class="form-group">
+                        <label>المحافظة *</label>
+                        <select id="governorate" required>
+                            <option value="">اختر محافظة...</option>
+                            <option value="Cairo">القاهرة</option>
+                            <option value="Giza">الجيزة</option>
+                            <option value="Alexandria">الإسكندرية</option>
+                            <option value="Dakahlia">الدقهلية</option>
+                            <option value="Red Sea">البحر الأحمر</option>
+                            <option value="Beheira">البحيرة</option>
+                            <option value="Fayoum">الفيوم</option>
+                            <option value="Gharbia">الغربية</option>
+                            <option value="Ismailia">الإسماعيلية</option>
+                            <option value="Menofia">المنوفية</option>
+                            <option value="Minya">المنيا</option>
+                            <option value="Qaliubiya">القليوبية</option>
+                            <option value="New Valley">الوادي الجديد</option>
+                            <option value="Suez">السويس</option>
+                            <option value="Aswan">أسوان</option>
+                            <option value="Assiut">أسيوط</option>
+                            <option value="Beni Suef">بني سويف</option>
+                            <option value="Port Said">بورسعيد</option>
+                            <option value="Damietta">دمياط</option>
+                            <option value="Sharkia">الشرقية</option>
+                            <option value="South Sinai">جنوب سيناء</option>
+                            <option value="Kafr Al sheikh">كفر الشيخ</option>
+                            <option value="Matrouh">مطروح</option>
+                            <option value="Luxor">الأقصر</option>
+                            <option value="Qena">قنا</option>
+                            <option value="North Sinai">شمال سيناء</option>
+                            <option value="Sohag">سوهاج</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>المدينة / المنطقة *</label>
+                        <input type="text" id="city" required placeholder="المنطقة">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>العنوان بالتفصيل *</label>
+                        <textarea id="address" required placeholder="رقم العمارة، الشارع، علامة مميزة"></textarea>
+                    </div>
+                </div>
+                
+                <div class="payment-method">
+                    <h4>طريقة الدفع:</h4>
+                    <div class="method-card active">
+                        <span>الدفع عند الاستلام (COD)</span>
+                    </div>
+                </div>
+
+                <div class="checkout-actions">
+                    <button type="submit" class="btn btn-primary btn-lg">المتابعة</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Step 2: Review -->
+        <div id="step2" class="step-container">
+            <div class="review-grid">
+                <div class="review-section">
+                    <h3>بيانات التوصيل</h3>
+                    <div id="review-address-info" class="info-box"></div>
+                    <button onclick="toStep1()" class="btn btn-outline btn-sm">تعديل</button>
+                </div>
+
+                <div class="review-section">
+                    <h3>ملخص الطلب</h3>
+                    <div id="review-items" class="info-box"></div>
+                </div>
+            </div>
+
+            <div class="checkout-actions">
+                <button onclick="submitOrder()" id="submitBtn" class="btn btn-primary btn-lg">تأكيد الطلب</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Success -->
+        <div id="step3" class="step-container">
+            <div class="success-box">
+                <div class="success-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h2>تم استلام طلبك!</h2>
+                <p>رقم الطلب: <strong id="order-id">#EK-2026-001</strong></p>
+                <p>سنتصل بك خلال 24 ساعة لتأكيد الطلب.</p>
+                <div class="success-actions">
+                    <a href="/" class="btn btn-primary">العودة للرئيسية</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let checkoutData = {};
+
+    function toStep2(e) {
+        e.preventDefault();
+        checkoutData = {
+            name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value,
+            phone2: document.getElementById('phone2').value,
+            governorate: document.getElementById('governorate').value,
+            city: document.getElementById('city').value,
+            address: document.getElementById('address').value
+        };
+
+        document.getElementById('review-address-info').innerHTML = `
+            <p><strong>الاسم:</strong> ${checkoutData.name}</p>
+            <p><strong>التليفون:</strong> ${checkoutData.phone}</p>
+            <p><strong>المحافظة:</strong> ${checkoutData.governorate}</p>
+            <p><strong>العنوان:</strong> ${checkoutData.city}, ${checkoutData.address}</p>
+        `;
+
+        const cart = getCart();
+        let itemsHtml = '';
+        let total = 0;
+        cart.forEach(item => {
+            total += item.price * item.quantity;
+            itemsHtml += `<div class="review-item">${item.name} × ${item.quantity} <span>${item.price * item.quantity} ج.م</span></div>`;
+        });
+        itemsHtml += `<hr><div class="review-total">الإجمالي: ${total} ج.م</div>`;
+        document.getElementById('review-items').innerHTML = itemsHtml;
+
+        switchStep(2);
+    }
+
+    function toStep1() {
+        switchStep(1);
+    }
+
+    function switchStep(n) {
+        document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(`step${n}`).classList.add('active');
+        document.getElementById(`step${n}-indicator`).classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const buyNowId = urlParams.get('buyNow');
+        if (buyNowId) {
+            await addToCart(buyNowId, 1);
+            const url = new URL(window.location);
+            url.searchParams.delete('buyNow');
+            window.history.replaceState({}, '', url);
+        }
+    });
+
+    async function submitOrder() {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'جاري إرسال الطلب...';
+
+        const cart = getCart();
+        const orderPayload = {
+            customer: checkoutData,
+            products: cart,
+            totalPrice: cart.reduce((s, i) => s + (i.price * i.quantity), 0),
+            paymentMethod: 'COD'
+        };
+
+        try {
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderPayload)
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                localStorage.removeItem('ekiei_cart');
+                updateCartBadge();
+                document.getElementById('order-id').textContent = '#EK-' + data.orderId.slice(-5).toUpperCase();
+                switchStep(3);
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (e) {
+            alert('فشل إرسال الطلب: ' + e.message);
+            btn.disabled = false;
+            btn.textContent = 'تأكيد الطلب';
+        }
+    }
+</script>
+
+<style>
+.checkout-steps { 
+  display: flex; 
+  justify-content: center; 
+  gap: 15px; 
+  margin: 40px 0 60px;
+  background: var(--gray-50);
+  padding: 10px;
+  border-radius: 50px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+.step { 
+  font-weight: 700; 
+  color: var(--gray-400); 
+  padding: 10px 25px;
+  border-radius: 50px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+.step.active { 
+  color: white; 
+  background: var(--primary);
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.2);
+}
+.step-container { display: none; }
+.step-container.active { display: block; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group.full-width { grid-column: span 2; }
+.form-group label { font-weight: 700; font-size: 14px; }
+.form-group input, .form-group select, .form-group textarea { padding: 12px; border: 1px solid var(--gray-200); border-radius: 4px; font-family: inherit; }
+.form-group textarea { height: 80px; }
+.payment-method { margin-top: 30px; }
+.method-card { border: 2px solid var(--primary); padding: 15px; border-radius: var(--radius); width: fit-content; font-weight: 700; }
+.checkout-actions { margin-top: 40px; display: flex; justify-content: center; }
+.review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+.info-box { background: var(--gray-50); padding: 20px; border-radius: var(--radius); margin: 15px 0; }
+.review-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+.review-total { font-size: 20px; font-weight: 900; color: var(--primary); }
+.success-box { text-align: center; padding: 50px 0; }
+.success-icon { font-size: 64px; margin-bottom: 20px; }
+.success-actions { margin-top: 30px; }
+</style>

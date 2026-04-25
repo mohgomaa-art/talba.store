@@ -1,0 +1,117 @@
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo-wrap" style="justify-content: center; margin-bottom: 20px;">
+                <svg class="logo-svg" style="width: 60px;" viewBox="0 0 108 130" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12,22 Q12,10 24,10 L84,10 Q96,10 96,22 L96,86 L54,120 L12,86 Z" fill="#27ae60"/>
+                    <circle cx="54" cy="24" r="7" fill="white" opacity="0.9"/>
+                    <circle cx="54" cy="24" r="4" fill="#27ae60"/>
+                    <rect x="22" y="48" width="64" height="14" rx="5" fill="white"/>
+                    <rect x="43" y="48" width="22" height="44" rx="5" fill="white"/>
+                </svg>
+                <div style="text-align: left;">
+                    <div class="wordmark-main" style="font-size: 42px;">Tal<span class="wordmark-accent">ba</span></div>
+                    <div class="wordmark-sub" style="font-size: 10px;">STORE</div>
+                </div>
+            </div>
+            <h1>تسجيل الدخول</h1>
+            <p>لوحة التحكم - Talba Store</p>
+        </div>
+        
+        <% if (locals.error) { %>
+            <div class="error-message">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <form action="/login" method="POST" class="login-form">
+            <div class="form-group">
+                <label for="username">اسم المستخدم</label>
+                <input type="text" id="username" name="username" required placeholder="أدخل اسم المستخدم">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">كلمة المرور</label>
+                <input type="password" id="password" name="password" required placeholder="أدخل كلمة المرور">
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">دخول</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header h1 {
+    font-size: 24px;
+    margin-bottom: 5px;
+    color: var(--black);
+}
+
+.login-header p {
+    color: var(--gray-500);
+    font-size: 14px;
+}
+
+.login-form .form-group {
+    margin-bottom: 20px;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    transition: border-color 0.3s;
+}
+
+.login-form input:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.error-message {
+    background: #fff5f5;
+    color: #e53e3e;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid #fed7d7;
+}
+
+.btn-block {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+}
+</style>

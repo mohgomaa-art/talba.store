@@ -1,0 +1,116 @@
+<div class="product-page container">
+    <nav class="breadcrumb">
+        <a href="/">الرئيسية</a> > 
+        <a href="/shop?category=<%= product.category %>"><%= product.category %></a> > 
+        <span><%= product.name %></span>
+    </nav>
+
+    <div class="product-details-grid">
+        <div class="product-gallery">
+            <div class="main-image">
+                <img src="<%= product.images[0] %>" id="mainImg" alt="<%= product.name %>">
+            </div>
+            <% if (product.images.length > 1) { %>
+            <div class="thumbnails">
+                <% product.images.forEach((img, index) => { %>
+                    <img src="<%= img %>" onclick="document.getElementById('mainImg').src='<%= img %>'" alt="<%= product.name %> thumb">
+                <% }) %>
+            </div>
+            <% } %>
+        </div>
+
+        <div class="product-info">
+            <span class="category-tag"><%= product.category %></span>
+            <h1><%= product.name %></h1>
+            
+            <div class="meta-row">
+                <span class="stars-marker">★</span>
+                <span class="count">4.2 | 120 تقييم</span>
+                <span class="status <%= product.inStock ? 'in-stock' : 'out-of-stock' %>">
+                    | <%= product.inStock ? 'متوفر' : 'غير متوفر' %>
+                </span>
+            </div>
+
+            <div class="price-section">
+                <span class="price"><%= product.price %> ج.م</span>
+                <% if (product.oldPrice > product.price) { %>
+                    <span class="old-price"><%= product.oldPrice %> ج.م</span>
+                    <span class="save-tag">وفرت <%= product.oldPrice - product.price %> ج.م</span>
+                <% } %>
+            </div>
+
+            <div class="purchase-actions">
+                <div class="quantity-picker">
+                    <button onclick="changeQty(-1)">-</button>
+                    <input type="number" id="qty" value="1" min="1">
+                    <button onclick="changeQty(1)">+</button>
+                </div>
+                
+                <button onclick="addToCart('<%= product.id %>', document.getElementById('qty').value)" class="btn btn-outline btn-lg">السلة</button>
+                <a href="/checkout?buyNow=<%= product.id %>" class="btn btn-primary btn-lg">شراء الآن</a>
+            </div>
+
+            <div class="quick-trust">
+                <p><span class="dot"></span> الدفع عند الاستلام</p>
+                <p><span class="dot"></span> شحن سريع</p>
+                <p><span class="dot"></span> استرجاع مضمون</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="product-tabs">
+        <div class="tabs-header">
+            <button class="tab-btn active" onclick="openTab(event, 'desc')">الوصف</button>
+            <button class="tab-btn" onclick="openTab(event, 'specs')">المواصفات</button>
+            <button class="tab-btn" onclick="openTab(event, 'reviews')">التقييمات</button>
+        </div>
+        
+        <div id="desc" class="tab-content active">
+            <div class="description-text">
+                <%- product.description.replace(/\n/g, '<br>') %>
+            </div>
+        </div>
+
+        <div id="specs" class="tab-content">
+            <table class="specs-table">
+                <% if (product.specs && product.specs.length > 0) { %>
+                    <% product.specs.forEach(spec => { %>
+                        <tr>
+                            <td><%= spec.key %></td>
+                            <td><%= spec.value %></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr><td colspan="2">لا توجد مواصفات إضافية</td></tr>
+                <% } %>
+            </table>
+        </div>
+
+        <div id="reviews" class="tab-content">
+            <p>لا توجد مراجعات بعد. كن أول من يقيم هذا المنتج!</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function changeQty(n) {
+        const input = document.getElementById('qty');
+        let val = parseInt(input.value) + n;
+        if (val < 1) val = 1;
+        input.value = val;
+    }
+
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+</script>
