@@ -1,12 +1,11 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import expressLayouts from 'express-ejs-layouts';
 import 'dotenv/config';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import session from 'express-session';
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
 
 import pageRoutes from './routes/pageRoutes.js';
@@ -29,18 +28,16 @@ app.use(async (req, res, next) => {
     }
 });
 
-// ─── Cloudinary Setup ─────────────────────────────────────────────────────────
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+// ─── Cloudinary / Multer Setup ─────────────────────────────────────────────────
+const diskStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = 'public/uploads/';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
-
-const cloudinaryStorage = new CloudinaryStorage({
-    cloudinary,
-    params: { folder: 'talba-store', allowed_formats: ['jpg', 'jpeg', 'png', 'webp'] },
-});
-const upload = multer({ storage: cloudinaryStorage });
+const upload = multer({ storage: diskStorage });
 
 // ─── Session ──────────────────────────────────────────────────────────────────
 app.use(session({
