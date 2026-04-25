@@ -24,6 +24,9 @@ export const syncProducts = async (req, res) => {
     res.json({ success: true, count });
   } catch (e) {
     console.error('[Sync] Failed:', e.message);
-    res.status(500).json({ success: false, error: e.message });
+    const msg = e.message.includes('401') || e.message.includes('Unauthorized')
+        ? 'تم رفض الاتصال من سيرفر تاجر (401). تأكد من صحة بيانات الدخول أو أن تاجر لا يمنع الاتصال.'
+        : `فشلت المزامنة: ${e.message}`;
+    res.status(400).json({ success: false, error: msg });
   }
 };
