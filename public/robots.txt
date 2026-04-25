@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /cart
+Disallow: /checkout
+Disallow: /api/
+Disallow: /admin
+Disallow: /login
+Allow: /
+
+Sitemap: https://www.talba.store/sitemap.xml

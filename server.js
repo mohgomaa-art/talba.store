@@ -60,6 +60,7 @@ try {
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
+app.set('trust proxy', 1); // Trust Vercel proxy for secure cookies
 app.use(session({
     secret: process.env.SESSION_SECRET || 'talba-secret-2026',
     resave: false,
@@ -69,7 +70,7 @@ app.use(session({
         collectionName: 'sessions',
         ttl: 24 * 60 * 60 // 1 day
     }),
-    cookie: { maxAge: 24 * 60 * 60 * 1000, secure: process.env.VERCEL === '1', httpOnly: true }
+    cookie: { maxAge: 24 * 60 * 60 * 1000 } // Let Vercel handle HTTPS
 }));
 
 // ─── Core Middleware ──────────────────────────────────────────────────────────

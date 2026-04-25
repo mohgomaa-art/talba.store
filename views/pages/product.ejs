@@ -13,7 +13,7 @@
             <% if (product.images.length > 1) { %>
             <div class="thumbnails">
                 <% product.images.forEach((img, index) => { %>
-                    <img src="<%= img %>" onclick="document.getElementById('mainImg').src='<%= img %>'" alt="<%= product.name %> thumb">
+                    <img src="<%= img %>" loading="lazy" onclick="document.getElementById('mainImg').src='<%= img %>'" alt="<%= product.name %> thumb">
                 <% }) %>
             </div>
             <% } %>
@@ -112,5 +112,37 @@
         }
         document.getElementById(tabName).style.display = "block";
         evt.currentTarget.className += " active";
+</script>
+
+<!-- Product Schema Markup (JSON-LD) for SEO -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "<%= product.name.replace(/\"/g, '\\"') %>",
+  "image": [
+    <% product.images.forEach((img, i) => { %>
+      "<%= img %>"<%= i < product.images.length - 1 ? ',' : '' %>
+    <% }) %>
+  ],
+  "description": "<%= (product.seoDescription || product.description).substring(0, 300).replace(/\"/g, '\\"').replace(/\n/g, ' ') %>",
+  "sku": "<%= product.id %>",
+  "brand": {
+    "@type": "Brand",
+    "name": "Talba Store"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "https://www.talba.store/product/<%= product.slug %>",
+    "priceCurrency": "EGP",
+    "price": "<%= product.price %>",
+    "priceValidUntil": "2027-12-31",
+    "itemCondition": "https://schema.org/NewCondition",
+    "availability": "<%= product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' %>",
+    "seller": {
+      "@type": "Organization",
+      "name": "Talba Store"
     }
+  }
+}
 </script>

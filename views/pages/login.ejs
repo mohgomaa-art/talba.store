@@ -20,25 +20,45 @@
         
         <% if (locals.error) { %>
             <div class="error-message">
-                <%= error %>
+                <i class="fa fa-exclamation-circle" style="margin-left: 5px;"></i> <%= error %>
+                <div style="margin-top: 10px; font-size: 12px; color: #718096;">
+                    ملاحظة: البيانات الافتراضية هي:<br>
+                    المستخدم: <b>admin</b> | كلمة المرور: <b>admin123</b>
+                </div>
             </div>
         <% } %>
 
         <form action="/login" method="POST" class="login-form">
             <div class="form-group">
                 <label for="username">اسم المستخدم</label>
-                <input type="text" id="username" name="username" required placeholder="أدخل اسم المستخدم">
+                <input type="text" id="username" name="username" required placeholder="أدخل اسم المستخدم (مثال: admin)">
             </div>
             
             <div class="form-group">
                 <label for="password">كلمة المرور</label>
-                <input type="password" id="password" name="password" required placeholder="أدخل كلمة المرور">
+                <div class="password-input-wrap">
+                    <input type="password" id="password" name="password" required placeholder="أدخل كلمة المرور">
+                    <button type="button" class="toggle-password" onclick="togglePassword()">
+                        👁️
+                    </button>
+                </div>
             </div>
             
-            <button type="submit" class="btn btn-primary btn-block">دخول</button>
+            <button type="submit" class="btn btn-primary btn-block">تسجيل الدخول للوحة التحكم</button>
         </form>
     </div>
 </div>
+
+<script>
+function togglePassword() {
+    const passInput = document.getElementById('password');
+    if (passInput.type === 'password') {
+        passInput.type = 'text';
+    } else {
+        passInput.type = 'password';
+    }
+}
+</script>
 
 <style>
 .login-container {
@@ -53,9 +73,9 @@
     background: white;
     padding: 40px;
     border-radius: var(--radius);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
 }
 
 .login-header {
@@ -85,25 +105,48 @@
     font-size: 14px;
 }
 
+.password-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .login-form input {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     border: 1px solid var(--gray-200);
     border-radius: 8px;
-    transition: border-color 0.3s;
+    transition: all 0.3s;
+    font-size: 15px;
+}
+
+.toggle-password {
+    position: absolute;
+    left: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.toggle-password:hover {
+    opacity: 1;
 }
 
 .login-form input:focus {
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
     outline: none;
 }
 
 .error-message {
     background: #fff5f5;
-    color: #e53e3e;
-    padding: 12px;
+    color: #c53030;
+    padding: 15px;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     font-size: 14px;
     text-align: center;
     border: 1px solid #fed7d7;
@@ -113,5 +156,6 @@
     width: 100%;
     padding: 14px;
     font-size: 16px;
+    margin-top: 10px;
 }
 </style>
